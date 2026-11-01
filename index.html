@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>SPL Broadcast — Issue Criticality</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#111722;
+  --edge:#0b1019;
+  --center:#202b3b;
+  --surface:rgba(30,42,59,.84);
+  --surface-2:rgba(12,19,31,.72);
+  --surface-3:#29384e;
+  --text:#f7f9fd;
+  --muted:#aab6c9;
+  --line:rgba(185,204,232,.24);
+  --line-strong:rgba(197,220,250,.5);
+  --blue:#66b4fa;
+  --green:#2cc879;
+  --gold:#e1b969;
+  --orange:#ee9143;
+  --red:#e66760;
+  --shadow:0 18px 44px rgba(0,0,0,.3);
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--edge)}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  background:
+    radial-gradient(ellipse at center top,rgba(58,78,104,.4) 0%,rgba(28,39,56,.88) 42%,rgba(8,13,22,.98) 100%),
+    linear-gradient(90deg,#080d16 0%,#182333 16%,#202b3b 50%,#182333 84%,#080d16 100%);
+}
+button,input,select{font:inherit}
+button,select{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.hidden{display:none!important}
+.app{width:min(1500px,100%);margin:auto;padding:20px clamp(15px,4vw,58px)55px}
+.topbar{display:flex;align-items:center;gap:16px;min-height:62px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{display:grid;place-items:center;width:49px;height:49px;border:1px solid rgba(255,255,255,.4);border-radius:15px;background:linear-gradient(145deg,#0b9653,#07562f);font-weight:900;letter-spacing:-.1em;box-shadow:0 9px 26px #0006}
+.brand-name{font-size:11px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+.brand-sub{margin-top:4px;color:var(--muted);font-size:10px}
+.mobile-toggle{display:none;margin-left:auto;width:43px;height:43px;border:1px solid var(--line);border-radius:12px;color:#fff;background:var(--surface)}
+.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-left:auto}
+.status{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#09101bcc;font-size:10px;white-space:nowrap}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#3cdb82;box-shadow:0 0 8px #3cdb82}
+.status-dot.offline{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.btn{min-height:38px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:rgba(38,53,75,.85);font-size:10px;font-weight:800;transition:.16s ease}
+.btn:hover{transform:translateY(-1px);border-color:var(--line-strong);background:var(--surface-3)}
+.btn.primary{border-color:#54d99599;background:#08713c}
+.btn.primary:hover{background:#0b9752}
+.btn.blue{border-color:#66b4fa99;color:#e9f5ff;background:#397fbd2b}
+.btn.gold{border-color:#e1b96999;color:#ffe9b9;background:#e1b96920}
+.btn.desktop{border-color:#7ae0adbb;background:linear-gradient(145deg,#0a8b4b,#075b32)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:end;margin:42px 0 20px}
+.hero h1{margin:0;max-width:900px;font-size:clamp(38px,6vw,76px);line-height:.98;letter-spacing:-.065em;font-weight:900}
+.hero p{max-width:780px;margin:14px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+.season-box{padding:13px;border:1px solid #e1b96966;border-radius:15px;background:#171f2de6;box-shadow:var(--shadow)}
+.field label,.season-box label{display:block;margin-bottom:6px;color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+select,input{width:100%;min-height:39px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:#fff;background:#0d1523}
+.season-line{display:flex;gap:7px}.season-line select{flex:1;min-width:0}
+.locator{position:sticky;top:8px;z-index:20;display:flex;align-items:center;gap:8px;padding:9px;margin-bottom:20px;border:1px solid #66b4fa73;border-radius:14px;background:#101827f2;box-shadow:0 12px 32px #0005;backdrop-filter:blur(14px)}
+.locator-label{padding:0 7px;color:var(--blue);font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.section{margin-top:26px;scroll-margin-top:86px}
+.panel{position:relative;overflow:hidden;padding:18px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,rgba(45,61,84,.74),rgba(16,23,35,.94));box-shadow:var(--shadow)}
+.panel:before{content:"";position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--green),var(--gold))}
+.season-critical{border-color:#e1b9697d}.season-critical:before{height:4px;background:linear-gradient(90deg,var(--gold),var(--orange))}
+.critical-head,.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:13px}
+.critical-title h2,.section-head h2{margin:0;font-size:clamp(20px,2.5vw,28px);letter-spacing:-.035em}
+.critical-title p,.section-head p{margin:6px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;margin-bottom:6px;color:var(--blue);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+.eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.season-critical .eyebrow{color:var(--gold)}
+.kpis{display:flex;gap:8px}.kpi{min-width:104px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:#080e197d}
+.kpi strong{display:block;overflow:hidden;color:#ffe6b8;font-size:18px;letter-spacing:-.04em;text-overflow:ellipsis;white-space:nowrap}
+.kpi span{display:block;margin-top:2px;color:var(--muted);font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.critical-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
+.critical-tile{min-width:0;padding:11px;border:1px solid var(--line);border-radius:12px;background:#080f1c70;transition:.16s}
+.critical-tile:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+.critical-top,.critical-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.critical-rank{color:var(--gold);font-size:9px;font-weight:900}
+.critical-name{flex:1;min-width:0;overflow:hidden;font-size:11px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.critical-value{font-size:14px;font-weight:900}
+.bar{height:5px;margin:9px 0 7px;overflow:hidden;border-radius:99px;background:#fff1}
+.bar i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,var(--red),var(--orange),var(--gold))}
+.critical-foot{color:var(--muted);font-size:8px;font-weight:700;text-transform:uppercase}
+.grid-list,.issue-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.grid-card{position:relative;min-height:158px;padding:22px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:18px;text-align:center;background:linear-gradient(145deg,rgba(45,61,84,.75),rgba(15,22,35,.86));box-shadow:var(--shadow);transition:.18s;cursor:pointer}
+.grid-card:before{content:"";position:absolute;top:13px;left:50%;transform:translateX(-50%);width:34px;height:3px;border-radius:3px;background:var(--card-color,var(--green))}
+.grid-card:hover{transform:translateY(-3px);border-color:var(--line-strong);background:var(--surface-3)}
+.grid-code{font-size:24px;font-weight:800;letter-spacing:-.04em}.grid-name{margin-top:4px;color:#e6edf8;font-size:14px}.grid-meta{margin-top:11px;color:var(--muted);font-size:8px;font-weight:700;line-height:1.5;letter-spacing:.05em;text-transform:uppercase}
+.pattern-panel{border-color:#66b4fa80}.pattern-controls{display:grid;grid-template-columns:1.4fr 1.4fr .8fr .8fr auto;gap:9px;align-items:end;margin-bottom:13px}
+.chart-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.chart-toolbar span{color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.metric-toggle{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:10px;background:#080d1690}
+.metric-toggle button{padding:7px 11px;border:0;border-radius:7px;color:var(--muted);background:transparent;font-size:10px;font-weight:800}
+.metric-toggle button.active{color:#fff;background:#397fbd59}.metric-toggle button.active[data-metric=impact]{color:#ffe7b9;background:#e1b9694d}
+.chart-shell{position:relative;min-height:260px;padding:12px;border:1px solid var(--line);border-radius:13px;background:#080d1666}
+.chart-shell svg{display:block;width:100%;height:235px;overflow:visible}
+.basis{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.basis span{padding:5px 9px;border:1px solid #e1b96966;border-radius:99px;color:#ffe7b9;background:#e1b9691a;font-size:9px;font-weight:800}
+.pattern-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.pattern-stat{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1970}.pattern-stat.pct{border-color:#e1b96980;background:#e1b96912}.pattern-stat.impact{border-color:#ee914399;background:linear-gradient(145deg,#ee914326,#e1b9690f)}
+.pattern-stat b{display:block;font-size:18px;letter-spacing:-.02em}.pattern-stat.impact b{color:#ffd4a8}.pattern-stat span{display:block;margin-top:2px;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}.pattern-stat small{display:block;margin-top:5px;color:#8795aa;font-size:9px;line-height:1.4}
+.breakdown-label{display:block;margin:12px 0 6px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.pattern-breakdown{display:flex;flex-wrap:wrap;gap:6px}.pattern-chip{padding:6px 9px;border:1px solid var(--line);border-radius:8px;color:var(--muted);background:#080e1970;font-size:9px;font-weight:800}.pattern-chip b{margin-left:5px;color:#ffe6b8}.pattern-chip.impact-chip{border-color:#ee914366}.pattern-chip.impact-chip b{color:#ffd4a8}
+.helper{margin:10px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
+.faq{margin-top:14px;border:1px solid #66b4fa59;border-radius:12px;background:#080d1666;overflow:hidden}.faq summary{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;color:var(--blue);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";font-size:16px;color:var(--muted)}.faq[open] summary:after{transform:rotate(45deg)}.faq-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;padding:0 13px 13px}.faq-item{padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#11192799}.faq-item h4{margin:0 0 5px;font-size:11px}.faq-item p{margin:0;color:var(--muted);font-size:10px;line-height:1.55}.round-panel{padding:12px;border:1px solid var(--line);border-radius:14px;background:#192235b8}.round-heading{margin-bottom:9px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}.round-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.round-btn{flex:0 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:9px;color:var(--muted);background:#0d1523;font-size:10px;font-weight:800}.round-btn.active{color:#fff;border-color:#70d59f;background:#08713c}
+.issue-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(150deg,rgba(45,61,84,.72),rgba(17,23,36,.88));box-shadow:var(--shadow)}
+.issue-card h3{margin:0;font-size:12px}.issue-card p{min-height:29px;margin:5px 0 11px;color:var(--muted);font-size:9px;line-height:1.45}
+.counter{display:grid;grid-template-columns:33px 1fr 33px;gap:6px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:10px;background:#080d1670}.counter button{height:30px;border:1px solid var(--line);border-radius:7px;color:#fff;background:var(--surface-3);font-size:16px}.counter button:hover{background:#08713c}.counter input{min-height:30px;padding:3px;text-align:center;font-weight:900}
+.detail-header{display:flex;align-items:center;gap:15px;margin:34px 0 19px}.detail-copy{flex:1;min-width:0}.detail-copy h1{margin:0;font-size:clamp(29px,4vw,46px);letter-spacing:-.055em}.detail-copy p{margin:7px 0 0;color:var(--muted);font-size:11px}.badge{display:inline-flex;padding:5px 8px;margin-left:6px;border:1px solid #e1b9698c;border-radius:99px;color:#ffe7b9;background:#e1b9691f;font-size:9px;vertical-align:middle}
+.empty{grid-column:1/-1;padding:25px;border:1px dashed var(--line);border-radius:13px;color:var(--muted);text-align:center;font-size:11px}
+.modal-backdrop{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:#03070dc2;backdrop-filter:blur(7px)}.modal{width:min(500px,100%);padding:20px;border:1px solid var(--line-strong);border-radius:17px;background:#1a2434;box-shadow:0 28px 80px #0009}.modal h2{margin:0 0 6px;font-size:21px}.modal p{margin:0 0 16px;color:var(--muted);font-size:11px;line-height:1.5}.modal-fields{display:grid;gap:11px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}
+.toast{position:fixed;z-index:120;left:50%;bottom:22px;max-width:calc(100% - 28px);padding:11px 15px;border:1px solid var(--line-strong);border-radius:11px;color:#fff;background:#202d42;box-shadow:0 15px 40px #0007;font-size:11px;opacity:0;pointer-events:none;transform:translate(-50%,14px);transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}
+.flash{animation:flash .9s ease}@keyframes flash{35%{box-shadow:0 0 0 4px #78b8f674,var(--shadow)}}
+footer{margin-top:34px;color:#8190a6;font-size:10px;text-align:center;line-height:1.7}
+@media(max-width:1120px){.grid-list,.issue-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.pattern-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.app{padding:14px 13px 38px}.topbar{flex-wrap:wrap}.mobile-toggle{display:block}.top-actions{display:none;width:100%;margin:0;justify-content:flex-start;padding:9px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}.top-actions.open{display:flex}.hero{grid-template-columns:1fr;margin-top:29px}.locator{overflow-x:auto;flex-wrap:nowrap}.locator-label{display:none}.locator .btn{flex:0 0 auto}.critical-head{align-items:flex-start;flex-direction:column}.kpis{width:100%}.kpi{flex:1;min-width:0}.grid-list,.issue-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.grid-card{min-height:140px}.detail-header{align-items:flex-start;flex-wrap:wrap}.section-head{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:420px){.grid-list,.issue-grid{grid-template-columns:1fr}.critical-grid{grid-template-columns:1fr 1fr}.pattern-controls{grid-template-columns:1fr}.grid-card{min-height:125px}}
+
+.cf-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.cf-controls .field{min-width:130px}
+.cf-grids{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 280px;min-width:0}
+.chip{flex:0 0 auto;white-space:nowrap;padding:8px 11px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:#0d1523;font-size:10px;font-weight:800}
+.chip.on{color:#fff;border-color:#70d59f;background:#08713c}
+.cf-chart{min-height:330px;overflow:hidden;padding:8px 6px 0;border:1px solid var(--line);border-radius:13px;background:#080d1666}.cf-chart svg{display:block}
+.cf-row{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr) 110px;gap:14px;align-items:center;padding:8px 10px;border-radius:10px}
+.cf-row:nth-child(odd){background:#ffffff07}
+.cf-name{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:12px;font-weight:800;overflow-wrap:anywhere}
+.cf-bar{height:24px;overflow:hidden;border-radius:7px;background:#ffffff12}
+.cf-bar i{display:block;height:100%;border-radius:inherit}
+.cf-val{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}
+.cf-val b{font-size:16px;letter-spacing:-.02em}.cf-val span{color:var(--muted);font-size:10px;font-weight:700}
+.cf-summary{margin:12px 0 0;padding:11px 13px;border:1px solid #e1b96966;border-radius:11px;color:#ffe7b9;background:#e1b9691a;font-size:12px;line-height:1.55}
+@media(max-width:620px){.cf-row{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}.cf-bar{grid-column:1/-1;grid-row:2}.cf-val{flex-direction:row;gap:8px;align-items:baseline}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" aria-label="SPL">SPL</div>
+    <div><div class="brand-name">Saudi Pro League</div><div class="brand-sub">Broadcast Department · Issue Criticality</div></div>
+  </div>
+  <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+  <nav class="top-actions" id="top-actions" aria-label="Main actions">
+    <span class="status"><i class="status-dot" id="network-dot"></i><span id="network-text">Online</span></span>
+    <button class="btn" data-action="home">All grids</button>
+    <button class="btn gold" data-action="jump" data-target="home-season-critical">★ Season criticality</button>
+    <button class="btn blue" data-action="jump" data-target="pattern-panel">⌁ Issue pattern</button>
+    <button class="btn" data-action="export">Export data</button>
+    <button class="btn" data-action="import">Import data</button>
+    <button class="btn desktop" data-action="save-desktop">⬇ Save to desktop</button>
+    <input id="import-file" type="file" accept="application/json" hidden>
+  </nav>
+</header>
+
+<main>
+<section id="home-view">
+  <div class="hero">
+    <div>
+      <h1>On-air Issue<br>Criticality</h1>
+      <p>Track broadcast issues by grid, round and season. Issues per minute, issues per round and impact percentage are calculated directly from your recorded counts and fixed time of play — without historical time logs or a Min / Occurrence assumption.</p>
+    </div>
+    <div class="season-box">
+      <label for="home-season-select">Selected season</label>
+      <div class="season-line">
+        <select id="home-season-select"></select>
+        <button class="btn primary" data-action="add-season" aria-label="Add season">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="locator" aria-label="Dashboard shortcuts">
+    <span class="locator-label">Quick locate</span>
+    <button class="btn gold" data-action="jump" data-target="home-season-critical">★ Season issue criticality</button>
+    <button class="btn gold" data-action="jump" data-target="combined-frequency">▤ Combined frequency</button>
+    <button class="btn blue" data-action="jump" data-target="home-round-critical">◎ Round criticality</button>
+    <button class="btn blue" data-action="jump" data-target="pattern-panel">⌁ Issue pattern graph</button>
+  </nav>
+
+  <section class="section panel season-critical" id="home-season-critical">
+    <div class="critical-head">
+      <div class="critical-title">
+        <span class="eyebrow">Full selected season</span>
+        <h2>Season issue criticality</h2>
+        <p>All matches and all rounds, ranked from highest to lowest.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><strong id="home-season-total">0</strong><span>Season issues</span></div>
+        <div class="kpi"><strong id="home-season-top">—</strong><span>Most critical</span></div>
+      </div>
+    </div>
+    <div class="critical-grid" id="home-season-critical-grid"></div>
+  </section>
+
+  <section class="section panel" id="combined-frequency">
+    <div class="critical-head">
+      <div class="critical-title">
+        <span class="eyebrow">All grids combined</span>
+        <h2>Combined issue frequency</h2>
+        <p>Category totals at a glance: total occurrences per issue category, added up across the selected grids and rounds.</p>
+      </div>
+      <div class="kpis"><div class="kpi"><strong id="cf-total">0</strong><span>Total occurrences</span></div></div>
+    </div>
+    <div class="cf-controls">
+      <div class="field"><label for="cf-from">From round</label><select id="cf-from"></select></div>
+      <div class="field"><label for="cf-to">To round</label><select id="cf-to"></select></div>
+      <div class="cf-grids" id="cf-grids" aria-label="Grids included"></div>
+    </div>
+    <div class="cf-chart" id="cf-bars"></div>
+    <p class="cf-summary" id="cf-summary"></p>
+  </section>
+
+  <section class="section panel" id="home-round-critical">
+    <div class="critical-head">
+      <div class="critical-title">
+        <span class="eyebrow">Selected round · all grids</span>
+        <h2>Round issue criticality</h2>
+        <p>One round across every grid, ranked from highest to lowest.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><strong id="home-round-total">0</strong><span>Total issues</span></div>
+        <div class="kpi"><strong id="home-round-top">—</strong><span>Most critical</span></div>
+      </div>
+    </div>
+    <div class="field" style="max-width:180px;margin-bottom:12px">
+      <label for="home-round-select">Round</label>
+      <select id="home-round-select"></select>
+    </div>
+    <div class="critical-grid" id="home-round-critical-grid"></div>
+  </section>
+
+  <section class="section panel pattern-panel" id="pattern-panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Combined rounds</span>
+        <h2>Issue occurrence pattern</h2>
+        <p>Choose a grid, issue and round range. All figures use recorded issue counts and time of play only: one match equals 100 minutes, one round equals 9 matches or 900 minutes. Select several rounds to calculate their combined average impact.</p>
+      </div>
+    </div>
+    <div class="pattern-controls">
+      <div class="field"><label for="pattern-category">Grid</label><select id="pattern-category"></select></div>
+      <div class="field"><label for="pattern-issue">Issue</label><select id="pattern-issue"></select></div>
+      <div class="field"><label for="pattern-from">From round</label><select id="pattern-from"></select></div>
+      <div class="field"><label for="pattern-to">To round</label><select id="pattern-to"></select></div>
+      <button class="btn blue" data-action="update-pattern">Update graph</button>
+    </div>
+    <div class="chart-toolbar">
+      <span id="chart-caption">Occurrences per round</span>
+      <div class="metric-toggle" role="tablist" aria-label="Chart metric">
+        <button class="active" data-action="chart-metric" data-metric="count" role="tab" aria-selected="true">Occurrences</button>
+        <button data-action="chart-metric" data-metric="impact" role="tab" aria-selected="false">Impact %</button>
+      </div>
+    </div>
+    <div class="chart-shell" id="chart-shell"></div>
+    <div class="basis">
+      <span>1 match = 100 min</span>
+      <span>1 round = 9 matches = 900 min</span>
+      <span>1 season = 34 rounds = 30,600 min</span>
+      <span>Impact % = issues ÷ minutes of play × 100</span>
+    </div>
+    <div class="pattern-summary">
+      <div class="pattern-stat"><b id="pattern-total">0</b><span>Combined total</span><small id="pattern-total-sub"></small></div>
+      <div class="pattern-stat pct"><b id="pattern-per-match">—</b><span>Issues / match</span><small id="pattern-per-match-sub"></small></div>
+      <div class="pattern-stat pct"><b id="pattern-per-round">—</b><span>Issues / round</span><small id="pattern-per-round-sub"></small></div>
+      <div class="pattern-stat pct"><b id="pattern-per-minute">—</b><span>Issues / minute</span><small id="pattern-per-minute-sub"></small></div>
+      <div class="pattern-stat impact"><b id="pattern-impact-avg">—</b><span>Impact average % per round</span><small id="pattern-impact-avg-sub"></small></div>
+      <div class="pattern-stat impact"><b id="pattern-impact-peak">—</b><span>Highest round impact %</span><small id="pattern-impact-peak-sub"></small></div>
+      <div class="pattern-stat"><b id="pattern-playtime">—</b><span>Time of play covered</span><small id="pattern-playtime-sub"></small></div>
+      <div class="pattern-stat"><b id="pattern-season-proj">—</b><span>Season projection</span><small id="pattern-season-proj-sub"></small></div>
+      <div class="pattern-stat"><b id="pattern-peak">—</b><span>Peak round</span></div>
+      <div class="pattern-stat"><b id="pattern-trend">Stable</b><span>Pattern trend</span></div>
+    </div>
+    <span class="breakdown-label">Per-round breakdown · issues / match and impact %</span>
+    <div class="pattern-breakdown" id="pattern-breakdown"></div>
+    <p class="helper" id="pattern-description">Change a selection to calculate the pattern.</p>
+    <details class="faq">
+      <summary>How are these figures calculated?</summary>
+      <div class="faq-body">
+        <div class="faq-item"><h4>Why was Min / Occurrence removed?</h4><p>Min / Occurrence was a manual assumption about how many minutes an issue “costs”. It was not historical time-log data and it is not needed for your team’s calculation, so it has been removed. Leaving it at 1 would have changed the results; it is no longer used anywhere.</p></div>
+        <div class="faq-item"><h4>Do we need historical time logs?</h4><p>No. Enter only the number of issues recorded. The dashboard uses the fixed time of play: 100 minutes per match and 9 matches per round.</p></div>
+        <div class="faq-item"><h4>Issues per round and minute</h4><p>Issues per round = total issues ÷ number of rounds. Issues per minute = total issues ÷ total minutes of play. For several rounds, total minutes are rounds × 900.</p></div>
+        <div class="faq-item"><h4>How is impact average calculated?</h4><p>For each round: round issues ÷ 900 minutes × 100. Across several equally sized rounds, the average equals combined issues ÷ (number of rounds × 900) × 100.</p></div>
+        <div class="faq-item"><h4>Are the example minute figures used?</h4><p>No. Values such as Feed 2.0 minutes or VAR 2.5 minutes are not used because this dashboard measures issue frequency against time of play, not assumed minutes per occurrence.</p></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="main-grids">
+    <div class="section-head">
+      <div><span class="eyebrow">Broadcast workspace</span><h2>Main grids</h2><p>Open a grid to record round counts and view grid-specific criticality.</p></div>
+      <button class="btn primary" data-action="add-grid">＋ Add grid</button>
+    </div>
+    <div class="grid-list" id="grid-list"></div>
+  </section>
+</section>
+
+<section id="detail-view" class="hidden">
+  <div class="detail-header">
+    <button class="btn" data-action="home">← All grids</button>
+    <div class="detail-copy"><h1><span id="detail-title"></span><span class="badge" id="detail-season"></span></h1><p id="detail-description"></p></div>
+    <button class="btn primary" data-action="add-issue">＋ Add issue</button>
+  </div>
+  <nav class="locator" aria-label="Grid shortcuts">
+    <span class="locator-label">Grid dashboard</span>
+    <button class="btn blue" data-action="jump" data-target="detail-round-critical">◎ Round criticality</button>
+    <button class="btn gold" data-action="jump" data-target="detail-season-critical">★ Season criticality</button>
+    <button class="btn blue" data-action="detail-pattern">⌁ Analyze pattern</button>
+  </nav>
+  <section class="round-panel"><div class="round-heading">Select round to edit issue counts</div><div class="round-strip" id="round-strip"></div></section>
+  <section class="section">
+    <div class="section-head"><div><span class="eyebrow">Matchweek input</span><h2>Round <span id="active-round-label">1</span> issues</h2><p>Use the controls to record how many times each issue occurred.</p></div></div>
+    <div class="issue-grid" id="issue-grid"></div>
+  </section>
+  <section class="section panel" id="detail-round-critical">
+    <div class="critical-head"><div class="critical-title"><span class="eyebrow">This grid · selected round</span><h2>Round issue criticality</h2><p>Current grid and round, ranked highest to lowest.</p></div><div class="kpis"><div class="kpi"><strong id="detail-round-total">0</strong><span>Total issues</span></div><div class="kpi"><strong id="detail-round-top">—</strong><span>Most critical</span></div></div></div>
+    <div class="critical-grid" id="detail-round-critical-grid"></div>
+  </section>
+  <section class="section panel season-critical" id="detail-season-critical">
+    <div class="critical-head"><div class="critical-title"><span class="eyebrow">This grid · full season</span><h2>Season issue criticality</h2><p>All rounds in this grid, ranked highest to lowest.</p></div><div class="kpis"><div class="kpi"><strong id="detail-season-total">0</strong><span>Season issues</span></div><div class="kpi"><strong id="detail-season-top">—</strong><span>Most critical</span></div></div></div>
+    <div class="critical-grid" id="detail-season-critical-grid"></div>
+  </section>
+</section>
+</main>
+<footer>Saudi Pro League · Broadcast Department · Changes are saved locally on this device.</footer>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-backdrop">
+  <form class="modal" id="modal-form">
+    <h2 id="modal-title">Add item</h2><p id="modal-description"></p>
+    <div class="modal-fields" id="modal-fields"></div>
+    <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="submit" class="btn primary">Save</button></div>
+  </form>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(()=>{"use strict";
+const KEY="spl-criticality-dashboard-v5",ROUNDS=34,MATCHES=9,MATCH_MIN=100,ROUND_MIN=900,SEASON_MATCHES=306,SEASON_MIN=30600;
+const COLORS=["#20b46a","#4a90d9","#ed8b35","#d5aa5f","#e35b55","#8e78e8"];
+const DEFAULT_CATEGORIES=[
+{id:"imgqc",code:"IMG",name:"IMG QC",description:"World-feed image checks, slates and broadcast compliance."},
+{id:"splqc",code:"SPL",name:"SPL QC",description:"League quality-control checks and match sign-off."},
+{id:"audioqc",code:"AUD",name:"Audio QC",description:"Commentary, loudness, language tracks and synchronization."},
+{id:"mcr",code:"MCR",name:"MCR",description:"Master Control Room transmission and routing records."},
+{id:"production",code:"PROD",name:"Production",description:"Production notes, match coverage and post-match reports."}];
+const DEFAULT_ISSUES=[
+{id:"feed",name:"Feed / Transmission",description:"Fibre, satellite, signal loss, routing and delivery."},
+{id:"audio",name:"Audio / Commentary",description:"Commentary feed, sync, loudness and language tracks."},
+{id:"gpx",name:"Graphics / Tracking",description:"Tracking, pitch calibration and graphics data."},
+{id:"replay",name:"Replay / EVS",description:"Replay playlists, slow motion and highlight operations."},
+{id:"var",name:"VAR",name:"VAR",description:"Review packets, communications and offside-line output."}];
+const $=id=>document.getElementById(id), clone=v=>JSON.parse(JSON.stringify(v));
+const uid=p=>`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+const clamp=v=>Math.max(0,Math.min(9999,parseInt(v,10)||0));
+const fmt=(n,d=2)=>Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const escapeHTML=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let state,currentCategoryId=null,currentRound=1,chartMetric="count",modalMode=null,toastTimer;
+
+function makeSeason(label){
+ const s={id:uid("season"),label,categories:clone(DEFAULT_CATEGORIES),issues:clone(DEFAULT_ISSUES),data:{}};
+ s.categories.forEach((c,ci)=>{for(let r=1;r<=ROUNDS;r++)s.issues.forEach((i,ii)=>{
+  const wave=Math.sin((r+ii*2)/3.2),base=Math.max(0,Math.round(1.1+wave*1.4+((r+ci+ii)%6===0?3:0)));
+  s.data[`${c.id}:${r}:${i.id}`]=clamp(Math.round(base*(ci===0?1.25:ci===3?.75:1)*(i.id==="feed"?1.35:i.id==="var"?.65:1)));
+ });});
+ return s;
+}
+function initial(){const s=makeSeason("2026–27");return{activeSeasonId:s.id,seasons:[s]}}
+function normalize(raw){
+ if(!raw||!Array.isArray(raw.seasons)||!raw.seasons.length)return initial();
+ raw.seasons.forEach(s=>{s.id||=uid("season");s.label||="Season";s.categories=Array.isArray(s.categories)?s.categories:clone(DEFAULT_CATEGORIES);s.issues=Array.isArray(s.issues)?s.issues:clone(DEFAULT_ISSUES);s.data=s.data&&typeof s.data==="object"?s.data:{}});
+ raw.seasons.forEach(s=>s.issues.forEach(i=>{if(i&&i.id==="gpx"&&/^GPX\b/.test(i.name))i.name=i.name.replace(/^GPX/,"Graphics")}));
+ if(!raw.seasons.some(s=>s.id===raw.activeSeasonId))raw.activeSeasonId=raw.seasons[0].id;return raw;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
+function load(){try{state=normalize(JSON.parse(localStorage.getItem(KEY)))}catch{state=initial()}save()}
+function season(){return state.seasons.find(s=>s.id===state.activeSeasonId)||state.seasons[0]}
+function get(c,r,i){return clamp(season().data[`${c}:${r}:${i}`])}
+function set(c,r,i,v){season().data[`${c}:${r}:${i}`]=clamp(v);save()}
+function roundIssueTotal(i,r){return season().categories.reduce((a,c)=>a+get(c.id,r,i),0)}
+function seasonIssueTotal(i){let t=0;for(let r=1;r<=ROUNDS;r++)t+=roundIssueTotal(i,r);return t}
+function categoryRoundTotal(c,r){return season().issues.reduce((a,i)=>a+get(c,r,i.id),0)}
+function categorySeasonTotal(c){let t=0;for(let r=1;r<=ROUNDS;r++)t+=categoryRoundTotal(c,r);return t}
+function categoryIssueTotal(c,i){let t=0;for(let r=1;r<=ROUNDS;r++)t+=get(c,r,i);return t}
+function ranked(fn){return season().issues.map(i=>({id:i.id,name:i.name,count:fn(i.id)})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
+function roundOptions(selected){return Array.from({length:ROUNDS},(_,i)=>`<option value="${i+1}" ${i+1===selected?"selected":""}>Round ${i+1}</option>`).join("")}
+function criticalHTML(items,label){
+ if(!items.length)return`<div class="empty">No issues configured.</div>`;
+ const max=Math.max(1,...items.map(i=>i.count));
+ return items.map((x,i)=>`<article class="critical-tile"><div class="critical-top"><span class="critical-rank">#${i+1}</span><span class="critical-name" title="${escapeHTML(x.name)}">${escapeHTML(x.name)}</span><span class="critical-value">${x.count}</span></div><div class="bar"><i style="width:${Math.max(2,x.count/max*100)}%"></i></div><div class="critical-foot"><span>${escapeHTML(label)}</span><span>${x.count===1?"1 issue":x.count+" issues"}</span></div></article>`).join("")
+}
+function updateKpi(total,top,items){$(total).textContent=items.reduce((a,x)=>a+x.count,0);const t=items.find(x=>x.count>0);$(top).textContent=t?t.name:"—"}
+function renderSeasonControls(){$("home-season-select").innerHTML=state.seasons.map(s=>`<option value="${escapeHTML(s.id)}" ${s.id===state.activeSeasonId?"selected":""}>Season ${escapeHTML(s.label)}</option>`).join("")}
+function renderHomeCriticality(){
+ $("home-round-select").innerHTML=roundOptions(currentRound);
+ const r=ranked(i=>roundIssueTotal(i,currentRound)),s=ranked(seasonIssueTotal);
+ $("home-round-critical-grid").innerHTML=criticalHTML(r,`Round ${currentRound}`);updateKpi("home-round-total","home-round-top",r);
+ $("home-season-critical-grid").innerHTML=criticalHTML(s,"All 34 rounds");updateKpi("home-season-total","home-season-top",s)
+}
+function renderGridList(){
+ const cats=season().categories;
+ $("grid-list").innerHTML=cats.length?cats.map((c,i)=>`<article class="grid-card" style="--card-color:${COLORS[i%COLORS.length]}" data-action="open-grid" data-id="${escapeHTML(c.id)}" tabindex="0" role="button"><div class="grid-code">${escapeHTML(c.code)}</div><div class="grid-name">${escapeHTML(c.name)}</div><div class="grid-meta">34 rounds<br>${categorySeasonTotal(c.id)} season issues</div></article>`).join(""):`<div class="empty">No grids available.</div>`
+}
+function fillPatternControls(){
+ const s=season(),oldC=$("pattern-category").value,oldI=$("pattern-issue").value,oldF=Number($("pattern-from").value)||1,oldT=Number($("pattern-to").value)||7;
+ $("pattern-category").innerHTML='<option value="all">All</option>'+s.categories.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+ $("pattern-issue").innerHTML='<option value="all">All</option>'+s.issues.map(i=>`<option value="${escapeHTML(i.id)}">${escapeHTML(i.name)}</option>`).join("");
+ $("pattern-from").innerHTML=roundOptions(oldF);$("pattern-to").innerHTML=roundOptions(oldT);
+ if(oldC==="all"||s.categories.some(c=>c.id===oldC))$("pattern-category").value=oldC;
+ if(oldI==="all"||s.issues.some(i=>i.id===oldI))$("pattern-issue").value=oldI;
+}
+function resetStats(){
+ ["pattern-total"].forEach(id=>$(id).textContent="0");
+ ["pattern-per-match","pattern-per-round","pattern-per-minute","pattern-impact-avg","pattern-impact-peak","pattern-playtime","pattern-season-proj","pattern-peak"].forEach(id=>$(id).textContent="—");
+ ["pattern-total-sub","pattern-per-match-sub","pattern-per-round-sub","pattern-per-minute-sub","pattern-impact-avg-sub","pattern-impact-peak-sub","pattern-playtime-sub","pattern-season-proj-sub"].forEach(id=>$(id).textContent="");
+ $("pattern-trend").textContent="Stable";$("pattern-breakdown").innerHTML=""
+}
+function patternCount(c,r,i){const s=season(),cs=c==="all"?s.categories.map(x=>x.id):[c],is=i==="all"?s.issues.map(x=>x.id):[i];let t=0;cs.forEach(cc=>is.forEach(ii=>{t+=get(cc,r,ii)}));return t}
+function renderPattern(){
+ const s=season();if(!s.categories.length||!s.issues.length){$("chart-shell").innerHTML=`<div class="empty">Add a grid and issue to build a pattern graph.</div>`;resetStats();return}
+ let c=$("pattern-category").value,i=$("pattern-issue").value,from=Number($("pattern-from").value)||1,to=Number($("pattern-to").value)||7;if(from>to)[from,to]=[to,from];
+ $("pattern-from").value=from;$("pattern-to").value=to;
+ const values=[];for(let r=from;r<=to;r++){let v=patternCount(c,r,i);values.push({round:r,value:v,perMatch:v/MATCHES,impact:v/ROUND_MIN*100})}
+ const n=values.length,total=values.reduce((a,x)=>a+x.value,0),matches=n*MATCHES,minutes=matches*MATCH_MIN,perMatch=total/matches,perRound=total/n,perMinute=total/minutes,avg=values.reduce((a,x)=>a+x.impact,0)/n,peakValue=Math.max(...values.map(x=>x.value)),peak=values.find(x=>x.value===peakValue),low=Math.min(...values.map(x=>x.value)),delta=n>1?values[n-1].value-values[0].value:0;
+ $("pattern-total").textContent=total;$("pattern-total-sub").textContent=`${n} round${n===1?"":"s"} · ${from===to?"Round "+from:`Rounds ${from}–${to}`}`;
+ $("pattern-per-match").textContent=fmt(perMatch);$("pattern-per-match-sub").textContent=`${total} ÷ ${matches} matches`;
+ $("pattern-per-round").textContent=fmt(perRound);$("pattern-per-round-sub").textContent=`${total} ÷ ${n} round${n===1?"":"s"}`;
+ $("pattern-per-minute").textContent=fmt(perMinute,4);$("pattern-per-minute-sub").textContent=total?`1 issue every ${fmt(minutes/total,1)} minutes`:"No issues recorded";
+ $("pattern-impact-avg").textContent=fmt(avg)+"%";$("pattern-impact-avg-sub").textContent=`${total} ÷ ${minutes.toLocaleString()} min × 100`;
+ $("pattern-impact-peak").textContent=peakValue?fmt(peak.impact)+"%":"—";$("pattern-impact-peak-sub").textContent=peakValue?`Round ${peak.round} · ${peak.value} issues`:"No issues recorded";
+ $("pattern-playtime").textContent=minutes.toLocaleString()+" min";$("pattern-playtime-sub").textContent=`${matches} matches × 100 min`;
+ $("pattern-season-proj").textContent=fmt(perMatch*SEASON_MATCHES,0);$("pattern-season-proj-sub").textContent="At this rate over 306 matches";
+ $("pattern-peak").textContent=peakValue?`R${peak.round} · ${peak.value}`:"—";$("pattern-trend").textContent=delta>0?"Rising":delta<0?"Falling":"Stable";
+ $("pattern-breakdown").innerHTML=values.map(x=>`<span class="pattern-chip impact-chip">R${x.round} · ${x.value}<b>${fmt(x.perMatch)} / match</b><b>${fmt(x.impact)}%</b></span>`).join("");
+ const cat=s.categories.find(x=>x.id===c),iss=s.issues.find(x=>x.id===i),range=from===to?`Round ${from}`:`Rounds ${from}–${to}`;
+ $("pattern-description").textContent=`${i==="all"?"All issues":iss?.name||"Issue"} in ${c==="all"?"all grids":cat?.name||"grid"} · ${range} · ${total} occurrences over ${matches} matches (${minutes.toLocaleString()} minutes of play). Issues per minute and impact are based only on time of play.`;
+ renderChart(values,avg,i==="all"?"All issues":iss?.name||"Issue")
+}
+function renderChart(values,avg,label){
+ const impact=chartMetric==="impact",W=900,H=235,L=50,R=18,T=16,B=32,n=values.length,plotW=W-L-R,plotH=H-T-B,peak=Math.max(0,...values.map(x=>impact?x.impact:x.value)),max=impact?Math.max(.5,Math.ceil(peak*1.2*10)/10):Math.max(5,peak+1),step=n>1?plotW/(n-1):0,pts=values.map((p,i)=>({x:n===1?L+plotW/2:L+i*step,y:T+plotH-(impact?p.impact:p.value)/max*plotH,...p}));
+ let grid="";for(let i=0;i<=4;i++){let y=T+i*plotH/4,v=max*(1-i/4),txt=impact?fmt(v)+"%":Math.round(v);grid+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="rgba(159,179,214,.12)"/><text x="${L-10}" y="${y+4}" fill="#95a3bb" text-anchor="end" font-size="10">${txt}</text>`}
+ const line=pts.map(p=>`${p.x},${p.y}`).join(" "),area=`${pts[0].x},${T+plotH} ${line} ${pts.at(-1).x},${T+plotH}`;
+ const circles=pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="5" fill="#d5aa5f" stroke="#141924" stroke-width="2"><title>Round ${p.round}: ${p.value} occurrences · ${fmt(p.impact)}% impact</title></circle>`).join("");
+ const labels=pts.map((p,i)=>i%Math.ceil(n/17)===0||i===n-1?`<text x="${p.x}" y="${H-8}" fill="#95a3bb" text-anchor="middle" font-size="10">R${p.round}</text>`:"").join("");
+ $("chart-caption").textContent=impact?"Impact % per round (count ÷ 900 min × 100)":"Occurrences per round";
+ $("chart-shell").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHTML(label)} chart">${grid}<polygon points="${area}" fill="${impact?"rgba(237,139,53,.16)":"rgba(74,144,217,.18)"}"/><polyline points="${line}" fill="none" stroke="${impact?"#ed8b35":"#78b8f6"}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${circles}${labels}</svg>`
+}
+let cfFrom=1,cfTo=ROUNDS;const cfOff=new Set();
+function cfTotals(){const s=season(),cats=s.categories.filter(c=>!cfOff.has(c.id)),lo=Math.min(cfFrom,cfTo),hi=Math.max(cfFrom,cfTo);return s.issues.map((i,idx)=>{let t=0;cats.forEach(c=>{for(let r=lo;r<=hi;r++)t+=get(c.id,r,i.id)});return{id:i.id,name:i.name,count:t,color:COLORS[idx%COLORS.length]}}).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
+let cfTimer;
+function cfWrap(text,max){const words=String(text).split(/\s+/),lines=[];let cur="";words.forEach(w=>{if((cur+" "+w).trim().length<=max)cur=(cur+" "+w).trim();else{if(cur)lines.push(cur);cur=w}});if(cur)lines.push(cur);if(lines.length>3){lines.length=3;lines[2]=lines[2].slice(0,Math.max(1,max-1))+"…"}return lines}
+function cfChart(items,total,pct){
+ if(!items.length)return`<div class="empty">No issues configured.</div>`;
+ const el=$("cf-bars"),W=Math.max(300,Math.floor(el.clientWidth||700)),n=items.length,small=(W-58)/n<92,H=small?380:330,L=small?84:46,R=12,T=34,B=small?122:72,pw=W-L-R,ph=H-T-B,peak=Math.max(0,...items.map(x=>x.count));
+ const nice=v=>{const p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};
+ const step=nice(Math.max(1,peak/4)),max=step*4,slot=pw/n,bw=Math.min(76,slot*.62),maxChars=Math.max(6,Math.floor(slot/6.3));
+ let g="";for(let i=0;i<=4;i++){const y=T+ph-i*ph/4;g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="rgba(159,179,214,${i?".16":".45"})"/><text x="${L-8}" y="${y+4}" fill="#95a3bb" text-anchor="end" font-size="10">${(step*i).toLocaleString()}</text>`}
+ const bars=items.map((x,i)=>{const cx=L+slot*i+slot/2,h=x.count/max*ph,y=T+ph-h,lines=cfWrap(x.name,maxChars);
+  return`<g><title>${escapeHTML(x.name)}: ${x.count.toLocaleString()} occurrences (${pct(x)}%)</title><rect x="${cx-bw/2}" y="${y}" width="${bw}" height="${Math.max(h,x.count?2:0)}" rx="5" fill="${x.color}"/>
+  <text x="${cx}" y="${y-(small?6:19)}" fill="#f7f9fd" text-anchor="middle" font-size="${small?11:13}" font-weight="800">${x.count.toLocaleString()}</text>${small?"":`<text x="${cx}" y="${y-6}" fill="#95a3bb" text-anchor="middle" font-size="10">${pct(x)}%</text>`}
+  ${small?`<text transform="translate(${cx+4} ${T+ph+14}) rotate(-45)" fill="#d5deeb" text-anchor="end" font-size="11" font-weight="700">${escapeHTML(x.name.length>24?x.name.slice(0,23)+"…":x.name)}</text>`:lines.map((ln,li)=>`<text x="${cx}" y="${T+ph+18+li*13}" fill="#d5deeb" text-anchor="middle" font-size="11" font-weight="700">${escapeHTML(ln)}</text>`).join("")}</g>`}).join("");
+ return`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Total occurrences per issue category, highest to lowest">${g}${bars}</svg>`
+}
+function renderCombined(){
+ const s=season();$("cf-from").innerHTML=roundOptions(cfFrom);$("cf-to").innerHTML=roundOptions(cfTo);
+ $("cf-grids").innerHTML=s.categories.map(c=>`<button type="button" class="chip ${cfOff.has(c.id)?"":"on"}" data-action="cf-grid" data-id="${escapeHTML(c.id)}" aria-pressed="${!cfOff.has(c.id)}">${escapeHTML(c.name)}</button>`).join("");
+ const items=cfTotals(),total=items.reduce((a,x)=>a+x.count,0),max=Math.max(1,...items.map(x=>x.count)),pct=x=>total?fmt(x.count/total*100,1):"0.0";
+ $("cf-total").textContent=total.toLocaleString();
+ $("cf-bars").innerHTML=cfChart(items,total,pct);
+ let msg;const on=s.categories.length-cfOff.size;
+ if(!on)msg="Select at least one grid to see totals.";
+ else if(!total)msg="No occurrences recorded for this selection yet.";
+ else{const a=items[0],b=items[1],c=items[2],z=items[items.length-1];msg=`${a.name} leads with ${a.count.toLocaleString()} occurrences (${pct(a)}% of the total).`;if(b)msg+=` ${b.name} is second`+(c?` and ${c.name} third.`:`.`);if(items.length>2)msg+=` ${z.name} is the least frequent with ${z.count.toLocaleString()} (${pct(z)}%).`}
+ $("cf-summary").textContent=msg
+}
+function renderHome(){currentCategoryId=null;$("home-view").classList.remove("hidden");$("detail-view").classList.add("hidden");renderSeasonControls();renderHomeCriticality();renderGridList();renderCombined();fillPatternControls();renderPattern()}
+function renderDetail(){
+ const c=season().categories.find(x=>x.id===currentCategoryId);if(!c){renderHome();return}
+ $("home-view").classList.add("hidden");$("detail-view").classList.remove("hidden");$("detail-title").textContent=c.name;$("detail-season").textContent=`Season ${season().label}`;$("detail-description").textContent=c.description;$("active-round-label").textContent=currentRound;
+ $("round-strip").innerHTML=Array.from({length:ROUNDS},(_,i)=>`<button class="round-btn ${i+1===currentRound?"active":""}" data-action="select-round" data-round="${i+1}">R${i+1}</button>`).join("");
+ renderIssues();renderDetailCriticality()
+}
+function renderIssues(){
+ const s=season();$("issue-grid").innerHTML=s.issues.length?s.issues.map(i=>`<article class="issue-card"><h3>${escapeHTML(i.name)}</h3><p>${escapeHTML(i.description)}</p><div class="counter"><button data-action="step-count" data-id="${escapeHTML(i.id)}" data-step="-1" aria-label="Decrease">−</button><input type="number" min="0" max="9999" value="${get(currentCategoryId,currentRound,i.id)}" data-action="count-input" data-id="${escapeHTML(i.id)}" aria-label="${escapeHTML(i.name)} count"><button data-action="step-count" data-id="${escapeHTML(i.id)}" data-step="1" aria-label="Increase">＋</button></div></article>`).join(""):`<div class="empty">No issues configured.</div>`
+}
+function renderDetailCriticality(){
+ const r=ranked(i=>get(currentCategoryId,currentRound,i)),s=ranked(i=>categoryIssueTotal(currentCategoryId,i));
+ $("detail-round-critical-grid").innerHTML=criticalHTML(r,`Round ${currentRound}`);updateKpi("detail-round-total","detail-round-top",r);
+ $("detail-season-critical-grid").innerHTML=criticalHTML(s,"All 34 rounds");updateKpi("detail-season-total","detail-season-top",s)
+}
+function toast(msg,ms=3200){$("toast").textContent=msg;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),ms)}
+function jumpTo(id){if(["home-round-critical","home-season-critical","combined-frequency","pattern-panel"].includes(id)&&$("home-view").classList.contains("hidden"))renderHome();$("top-actions").classList.remove("open");requestAnimationFrame(()=>{const el=$(id);if(!el)return;el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")})}
+function openModal(mode){
+ modalMode=mode;const f=$("modal-fields");let html="";
+ if(mode==="season"){ $("modal-title").textContent="Add season";$("modal-description").textContent="Create another workspace with the same grids and issue types.";html=`<div class="field"><label>Season label</label><input name="label" placeholder="2027–28" required></div>`}
+ if(mode==="grid"){ $("modal-title").textContent="Add main grid";$("modal-description").textContent="Create a new broadcast reporting grid.";html=`<div class="field"><label>Short code</label><input name="code" placeholder="IMG" maxlength="12" required></div><div class="field"><label>Grid name</label><input name="name" placeholder="IMG QC" required></div><div class="field"><label>Description</label><input name="description" placeholder="Broadcast quality-control checks"></div>`}
+ if(mode==="issue"){ $("modal-title").textContent="Add issue";$("modal-description").textContent="This issue will be available in every grid and round.";html=`<div class="field"><label>Issue name</label><input name="name" placeholder="Graphics timing" required></div><div class="field"><label>Description</label><input name="description" placeholder="What should be recorded?"></div>`}
+ f.innerHTML=html;$("modal-backdrop").classList.remove("hidden");requestAnimationFrame(()=>f.querySelector("input")?.focus())
+}
+function closeModal(){modalMode=null;$("modal-backdrop").classList.add("hidden");$("modal-form").reset()}
+function download(data,name,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+document.addEventListener("click",e=>{
+ const t=e.target.closest("[data-action]");if(!t)return;const a=t.dataset.action;
+ if(a==="home"){renderHome();scrollTo({top:0,behavior:"smooth"})}
+ if(a==="jump")jumpTo(t.dataset.target);
+ if(a==="open-grid"){currentCategoryId=t.dataset.id;currentRound=1;renderDetail();scrollTo({top:0,behavior:"smooth"})}
+ if(a==="select-round"){currentRound=Number(t.dataset.round);renderDetail()}
+ if(a==="step-count"){set(currentCategoryId,currentRound,t.dataset.id,get(currentCategoryId,currentRound,t.dataset.id)+Number(t.dataset.step));renderIssues();renderDetailCriticality()}
+ if(a==="count-input")return;
+ if(a==="detail-pattern"){const c=currentCategoryId;renderHome();$("pattern-category").value=c;$("pattern-from").value=Math.max(1,currentRound-6);$("pattern-to").value=currentRound;renderPattern();jumpTo("pattern-panel")}
+ if(a==="cf-grid"){const id=t.dataset.id;cfOff.has(id)?cfOff.delete(id):cfOff.add(id);renderCombined()}
+ if(a==="chart-metric"){chartMetric=t.dataset.metric;document.querySelectorAll("[data-action=chart-metric]").forEach(b=>{let on=b.dataset.metric===chartMetric;b.classList.toggle("active",on);b.setAttribute("aria-selected",on)});renderPattern()}
+ if(a==="update-pattern"){renderPattern();toast("Pattern graph updated.")}
+ if(a==="add-season")openModal("season");if(a==="add-grid")openModal("grid");if(a==="add-issue")openModal("issue");if(a==="close-modal")closeModal();
+ if(a==="export"){download(JSON.stringify({app:"SPL Broadcast Criticality",exportedAt:new Date().toISOString(),...state},null,2),"spl-broadcast-criticality.json","application/json");toast("Dashboard data exported.")}
+ if(a==="import")$("import-file").click();
+ if(a==="save-desktop"){download(`[InternetShortcut]\r\nURL=${location.href}\r\n`,"SPL-Broadcast-Criticality.url","application/internet-shortcut");toast("Shortcut downloaded.")}
+});
+document.addEventListener("input",e=>{if(e.target.dataset.action==="count-input"){set(currentCategoryId,currentRound,e.target.dataset.id,e.target.value);renderDetailCriticality()}});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(".grid-card")){e.preventDefault();e.target.click()}if(e.key==="Escape"&&!$("modal-backdrop").classList.contains("hidden"))closeModal()});
+$("home-season-select").addEventListener("change",e=>{state.activeSeasonId=e.target.value;currentRound=1;save();renderHome();toast(`Season ${season().label} selected.`)});
+$("home-round-select").addEventListener("change",e=>{currentRound=Number(e.target.value);renderHomeCriticality()});
+addEventListener("resize",()=>{clearTimeout(cfTimer);cfTimer=setTimeout(()=>{if(!$("home-view").classList.contains("hidden"))renderCombined()},200)});
+["cf-from","cf-to"].forEach(id=>$(id).addEventListener("change",()=>{cfFrom=Number($("cf-from").value);cfTo=Number($("cf-to").value);renderCombined()}));
+["pattern-category","pattern-issue","pattern-from","pattern-to"].forEach(id=>$(id).addEventListener("change",renderPattern));
+$("mobile-toggle").addEventListener("click",()=>{let open=$("top-actions").classList.toggle("open");$("mobile-toggle").textContent=open?"×":"☰";$("mobile-toggle").setAttribute("aria-expanded",open)});
+$("modal-backdrop").addEventListener("click",e=>{if(e.target===$("modal-backdrop"))closeModal()});
+$("modal-form").addEventListener("submit",e=>{
+ e.preventDefault();const f=new FormData(e.currentTarget);
+ if(modalMode==="season"){let label=String(f.get("label")||"").trim();if(!label)return;if(state.seasons.some(s=>s.label.toLowerCase()===label.toLowerCase()))return toast("That season already exists.");let s=makeSeason(label);s.categories=clone(season().categories);s.issues=clone(season().issues);state.seasons.push(s);state.activeSeasonId=s.id;save();closeModal();renderHome();toast(`Season ${label} created.`)}
+ if(modalMode==="grid"){let c={id:uid("grid"),code:String(f.get("code")||"GRID").trim().toUpperCase(),name:String(f.get("name")||"").trim(),description:String(f.get("description")||"").trim()};if(!c.name)return;season().categories.push(c);save();closeModal();renderHome();toast("Grid added.")}
+ if(modalMode==="issue"){let i={id:uid("issue"),name:String(f.get("name")||"").trim(),description:String(f.get("description")||"").trim()};if(!i.name)return;season().issues.push(i);save();closeModal();renderDetail();toast("Issue added.")}
+});
+$("import-file").addEventListener("change",async e=>{let file=e.target.files?.[0];if(!file)return;try{let raw=JSON.parse(await file.text());if(!raw.seasons?.length)throw 0;if(!confirm("Replace current dashboard data with this import?"))return;state=normalize(raw);save();renderHome();toast("Dashboard imported.")}catch{toast("That file is not a valid dashboard export.")}e.target.value=""});
+function network(){let online=navigator.onLine;$("network-dot").classList.toggle("offline",!online);$("network-text").textContent=online?"Online":"Offline · saved locally"}
+addEventListener("online",network);addEventListener("offline",network);load();network();renderHome();
+})();
+</script>
+</body>
+</html>
